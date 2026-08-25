@@ -1,0 +1,5 @@
+allowBuilds:
+  # EAS Build에서 Sentry 소스맵을 업로드할 때 필요한 공식 CLI입니다.
+  '@sentry/cli': true
+  # ESLint의 선택적 네이티브 리졸버 설치 스크립트는 이 프로젝트에 필요하지 않습니다.
+  unrs-resolver: false

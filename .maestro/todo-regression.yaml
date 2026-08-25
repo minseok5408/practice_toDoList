@@ -1,0 +1,33 @@
+appId: com.minseok5408.practicetodo
+name: Todo CRUD and undo regression
+tags:
+  - smoke
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    id: onboarding-next
+    repeat: 3
+    delay: 300
+- tapOn:
+    id: quick-add-input
+- inputText: 'Maestro task'
+- pressKey: Enter
+- assertVisible: 'Maestro task'
+- tapOn: 'Maestro task'
+- tapOn:
+    id: todo-title-input
+- eraseText: 12
+- inputText: 'Maestro edited'
+- tapOn:
+    id: todo-save-button
+- assertVisible: 'Maestro edited'
+- tapOn: '완료로 표시'
+- assertVisible: '완료 취소'
+- swipe:
+    from:
+      text: 'Maestro edited'
+    direction: LEFT
+- assertNotVisible: 'Maestro edited'
+- tapOn: '되돌리기'
+- assertVisible: 'Maestro edited'

@@ -1,0 +1,56 @@
+{
+  "expo": {
+    "name": "Practice Todo",
+    "slug": "practice-todo",
+    "description": "일정, 알림, 프로젝트와 백업을 지원하는 로컬 우선 투두 앱",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/practice-todo-icon.png",
+    "scheme": "practicetodo",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "primaryColor": "#5b5bd6",
+    "backgroundColor": "#f5f7fb",
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "color": "#6657e8",
+          "defaultChannel": "todo-reminders"
+        }
+      ],
+      [
+        "expo-localization",
+        {
+          "supportedLocales": {
+            "ios": ["ko", "en"],
+            "android": ["ko", "en"]
+          }
+        }
+      ],
+      "@sentry/react-native/expo"
+    ],
+    "splash": {
+      "image": "./assets/practice-todo-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#f5f7fb"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.minseok5408.practicetodo",
+      "buildNumber": "1"
+    },
+    "android": {
+      "package": "com.minseok5408.practicetodo",
+      "versionCode": 1,
+      "permissions": ["android.permission.SCHEDULE_EXACT_ALARM"],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/practice-todo-icon.png",
+        "backgroundColor": "#f5f7fb"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "softwareKeyboardLayoutMode": "resize"
+    }
+  }
+}
