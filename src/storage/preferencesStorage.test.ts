@@ -15,6 +15,7 @@ describe('preferencesStorage', () => {
       selectedTag: 'important',
       lastScreen: 'settings' as const,
       hasOnboarded: true,
+      notificationPermissionPrompted: true,
     };
 
     expect(parsePreferences(preferences)).toEqual(preferences);
@@ -27,6 +28,7 @@ describe('preferencesStorage', () => {
         themeMode: 3,
         statusFilter: 'missing',
         hasOnboarded: 'yes',
+        notificationPermissionPrompted: 'yes',
       }),
     ).toEqual(DEFAULT_PREFERENCES);
   });

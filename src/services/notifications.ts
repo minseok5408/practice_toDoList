@@ -23,7 +23,7 @@ async function prepareAndroidChannel() {
     name: 'Todo reminders',
     importance: Notifications.AndroidImportance.HIGH,
     vibrationPattern: [0, 200, 120, 200],
-    lightColor: '#6657e8',
+    lightColor: '#2563eb',
   });
 }
 
@@ -54,6 +54,10 @@ export async function requestNotificationPermission() {
     },
   });
   return permissionGranted(requestedPermission);
+}
+
+export async function hasNotificationPermission() {
+  return permissionGranted(await Notifications.getPermissionsAsync());
 }
 
 export type ScheduleReminderResult =

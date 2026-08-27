@@ -53,7 +53,12 @@ export type TodoData = {
 export type TodoFilter = 'all' | 'active' | 'completed';
 export type SmartView = 'all' | 'today' | 'tomorrow' | 'upcoming' | 'overdue';
 export type TodoSort = 'manual' | 'created' | 'due' | 'priority' | 'completed';
-export type MainScreen = 'tasks' | 'history' | 'archive' | 'settings';
+export type MainScreen =
+  | 'tasks'
+  | 'calendar'
+  | 'history'
+  | 'archive'
+  | 'settings';
 
 const TODO_PRIORITIES: readonly TodoPriority[] = ['low', 'normal', 'high'];
 const RECURRENCE_FREQUENCIES: readonly RecurrenceFrequency[] = [

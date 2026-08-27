@@ -3,19 +3,19 @@
     "name": "Practice Todo",
     "slug": "practice-todo",
     "description": "일정, 알림, 프로젝트와 백업을 지원하는 로컬 우선 투두 앱",
-    "version": "1.0.0",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/practice-todo-icon.png",
     "scheme": "practicetodo",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "primaryColor": "#5b5bd6",
+    "primaryColor": "#2563eb",
     "backgroundColor": "#f5f7fb",
     "plugins": [
       [
         "expo-notifications",
         {
-          "color": "#6657e8",
+          "color": "#2563eb",
           "defaultChannel": "todo-reminders"
         }
       ],
@@ -38,12 +38,15 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.minseok5408.practicetodo",
-      "buildNumber": "1"
+      "buildNumber": "5"
     },
     "android": {
       "package": "com.minseok5408.practicetodo",
-      "versionCode": 1,
-      "permissions": ["android.permission.SCHEDULE_EXACT_ALARM"],
+      "versionCode": 5,
+      "permissions": [
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.SCHEDULE_EXACT_ALARM"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/practice-todo-icon.png",
         "backgroundColor": "#f5f7fb"

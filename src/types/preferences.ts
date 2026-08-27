@@ -15,6 +15,7 @@ export type AppPreferences = {
   selectedTag: string | null;
   lastScreen: MainScreen;
   hasOnboarded: boolean;
+  notificationPermissionPrompted: boolean;
 };
 
 export const DEFAULT_PREFERENCES: AppPreferences = {
@@ -28,4 +29,5 @@ export const DEFAULT_PREFERENCES: AppPreferences = {
   selectedTag: null,
   lastScreen: 'tasks',
   hasOnboarded: false,
+  notificationPermissionPrompted: false,
 };

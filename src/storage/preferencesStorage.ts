@@ -62,6 +62,7 @@ export function parsePreferences(value: unknown): AppPreferences {
         : DEFAULT_PREFERENCES.selectedTag,
     lastScreen: isOneOf(data.lastScreen, [
       'tasks',
+      'calendar',
       'history',
       'archive',
       'settings',
@@ -72,6 +73,10 @@ export function parsePreferences(value: unknown): AppPreferences {
       typeof data.hasOnboarded === 'boolean'
         ? data.hasOnboarded
         : DEFAULT_PREFERENCES.hasOnboarded,
+    notificationPermissionPrompted:
+      typeof data.notificationPermissionPrompted === 'boolean'
+        ? data.notificationPermissionPrompted
+        : DEFAULT_PREFERENCES.notificationPermissionPrompted,
   };
 }
 

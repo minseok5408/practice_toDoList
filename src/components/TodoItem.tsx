@@ -1,8 +1,4 @@
-import { Lucide, type LucideIconName } from '@react-native-vector-icons/lucide';
-import ReanimatedSwipeable, {
-  SwipeDirection,
-  type SwipeableMethods,
-} from 'react-native-gesture-handler/ReanimatedSwipeable';
+import { Lucide } from '@react-native-vector-icons/lucide';
 import { memo, useMemo, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -19,13 +15,16 @@ type TodoItemProps = {
   selected?: boolean;
   selectionMode?: boolean;
   dragEnabled?: boolean;
+  canMoveUp?: boolean;
+  canMoveDown?: boolean;
   onToggle: (id: string) => void;
   onToggleSubtask: (todoId: string, subtaskId: string) => void;
   onEdit: (todo: Todo) => void;
   onDelete: (id: string) => void;
   onArchive: (id: string) => void;
   onSelect: (id: string) => void;
-  onDrag?: () => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
 };
 
 const PRIORITY_ICONS = {
@@ -42,17 +41,19 @@ function TodoItemComponent({
   selected = false,
   selectionMode = false,
   dragEnabled = false,
+  canMoveUp = false,
+  canMoveDown = false,
   onToggle,
   onToggleSubtask,
   onEdit,
   onDelete,
   onArchive,
   onSelect,
-  onDrag,
+  onMoveUp,
+  onMoveDown,
 }: TodoItemProps) {
   const theme = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
-  const swipeable = useRef<SwipeableMethods>(null);
   const longPressed = useRef(false);
   const completedSubtasks = todo.subtasks.filter(
     (subtask) => subtask.completed,
@@ -61,16 +62,7 @@ function TodoItemComponent({
     todo.dueAt === null ? null : formatLocalDateTime(todo.dueAt, locale);
   const overdue = !todo.completed && isOverdue(todo.dueAt);
 
-  function handleSwipe(direction: SwipeDirection) {
-    swipeable.current?.close();
-    if (direction === SwipeDirection.RIGHT) {
-      onToggle(todo.id);
-    } else {
-      onDelete(todo.id);
-    }
-  }
-
-  const content = (
+  return (
     <View
       style={[
         styles.card,
@@ -255,117 +247,78 @@ function TodoItemComponent({
 
       <View style={styles.actions}>
         {dragEnabled ? (
-          <Pressable
-            accessibilityLabel={
-              locale === 'ko' ? '길게 눌러 순서 변경' : 'Hold to reorder'
-            }
-            onLongPress={onDrag}
-            style={styles.iconButton}
-          >
-            <Lucide
-              color={theme.colors.textMuted}
-              name="grip-vertical"
-              size={20}
-            />
-          </Pressable>
+          <>
+            <Pressable
+              accessibilityLabel={locale === 'ko' ? '위로 이동' : 'Move up'}
+              disabled={!canMoveUp}
+              hitSlop={4}
+              onPress={onMoveUp}
+              style={[
+                styles.reorderButton,
+                !canMoveUp && styles.disabledButton,
+              ]}
+            >
+              <Lucide
+                color={theme.colors.textMuted}
+                name="chevron-up"
+                size={17}
+              />
+            </Pressable>
+            <Pressable
+              accessibilityLabel={locale === 'ko' ? '아래로 이동' : 'Move down'}
+              disabled={!canMoveDown}
+              hitSlop={4}
+              onPress={onMoveDown}
+              style={[
+                styles.reorderButton,
+                !canMoveDown && styles.disabledButton,
+              ]}
+            >
+              <Lucide
+                color={theme.colors.textMuted}
+                name="chevron-down"
+                size={17}
+              />
+            </Pressable>
+          </>
         ) : null}
         <Pressable
           accessibilityLabel={t('archive')}
+          hitSlop={4}
           onPress={() => onArchive(todo.id)}
           style={styles.iconButton}
         >
           <Lucide color={theme.colors.textMuted} name="archive" size={18} />
         </Pressable>
+        <Pressable
+          accessibilityLabel={t('delete')}
+          hitSlop={4}
+          onPress={() => onDelete(todo.id)}
+          style={styles.iconButton}
+        >
+          <Lucide color={theme.colors.danger} name="trash-2" size={17} />
+        </Pressable>
       </View>
     </View>
-  );
-
-  if (selectionMode) return content;
-
-  return (
-    <ReanimatedSwipeable
-      ref={swipeable}
-      containerStyle={styles.swipeContainer}
-      leftThreshold={70}
-      onSwipeableOpen={handleSwipe}
-      overshootLeft={false}
-      overshootRight={false}
-      renderLeftActions={() => (
-        <SwipeAction
-          backgroundColor={theme.colors.success}
-          icon="check"
-          label={t('done')}
-        />
-      )}
-      renderRightActions={() => (
-        <SwipeAction
-          align="right"
-          backgroundColor={theme.colors.danger}
-          icon="trash-2"
-          label={t('delete')}
-        />
-      )}
-      rightThreshold={70}
-    >
-      {content}
-    </ReanimatedSwipeable>
   );
 }
 
 export const TodoItem = memo(TodoItemComponent);
 
-function SwipeAction({
-  label,
-  icon,
-  backgroundColor,
-  align = 'left',
-}: {
-  label: string;
-  icon: LucideIconName;
-  backgroundColor: string;
-  align?: 'left' | 'right';
-}) {
-  return (
-    <View
-      style={[
-        actionStyles.action,
-        { backgroundColor },
-        align === 'right' && actionStyles.actionRight,
-      ]}
-    >
-      <Lucide color="#ffffff" name={icon} size={20} />
-      <Text style={actionStyles.label}>{label}</Text>
-    </View>
-  );
-}
-
-const actionStyles = StyleSheet.create({
-  action: {
-    alignItems: 'center',
-    borderRadius: 18,
-    flex: 1,
-    flexDirection: 'row',
-    gap: 7,
-    marginVertical: 5,
-    paddingHorizontal: 20,
-  },
-  actionRight: { justifyContent: 'flex-end' },
-  label: { color: '#ffffff', fontSize: 13, fontWeight: '800' },
-});
-
 function createStyles(theme: AppTheme) {
   const { colors } = theme;
   return StyleSheet.create({
-    swipeContainer: { borderRadius: 18, marginBottom: 10 },
     card: {
-      alignItems: 'flex-start',
+      alignItems: 'center',
       backgroundColor: colors.surface,
       borderColor: colors.border,
-      borderRadius: 18,
+      borderRadius: 16,
       borderWidth: 1,
       flexDirection: 'row',
-      minHeight: 76,
-      padding: 14,
+      minHeight: 68,
+      paddingHorizontal: 12,
+      paddingVertical: 11,
+      marginBottom: 8,
       ...theme.shadows.card,
     },
     completedCard: { backgroundColor: colors.surfaceMuted, opacity: 0.8 },
@@ -378,7 +331,6 @@ function createStyles(theme: AppTheme) {
       height: 28,
       justifyContent: 'center',
       marginRight: 11,
-      marginTop: 1,
       width: 28,
     },
     checkedCheckbox: {
@@ -429,7 +381,13 @@ function createStyles(theme: AppTheme) {
     overdueChip: { backgroundColor: colors.dangerSoft },
     metaText: { color: colors.textMuted, fontSize: 10, fontWeight: '700' },
     overdueText: { color: colors.danger },
-    projectDot: { borderRadius: 4, height: 7, width: 7 },
+    projectDot: {
+      borderColor: colors.surface,
+      borderRadius: 5,
+      borderWidth: 1,
+      height: 10,
+      width: 10,
+    },
     tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginTop: 7 },
     tag: { color: colors.primary, fontSize: 10, fontWeight: '700' },
     subtasksBlock: { marginTop: 10 },
@@ -454,12 +412,26 @@ function createStyles(theme: AppTheme) {
       minHeight: 44,
     },
     subtaskText: { color: colors.textMuted, flex: 1, fontSize: 11 },
-    actions: { alignItems: 'center', gap: 2, marginLeft: 3 },
+    actions: {
+      alignItems: 'center',
+      alignSelf: 'center',
+      backgroundColor: colors.surfaceMuted,
+      borderRadius: 12,
+      flexDirection: 'row',
+      marginLeft: 6,
+    },
     iconButton: {
       alignItems: 'center',
-      height: 44,
+      height: 38,
       justifyContent: 'center',
-      width: 44,
+      width: 38,
     },
+    reorderButton: {
+      alignItems: 'center',
+      height: 30,
+      justifyContent: 'center',
+      width: 30,
+    },
+    disabledButton: { opacity: 0.28 },
   });
 }

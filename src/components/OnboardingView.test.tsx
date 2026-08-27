@@ -9,7 +9,7 @@ describe('OnboardingView', () => {
 
     expect(screen.getByText('오늘을 가볍게 정리해요')).toBeTruthy();
     await fireEvent.press(screen.getByTestId('onboarding-next'));
-    expect(screen.getByText('밀어서 빠르게 처리해요')).toBeTruthy();
+    expect(screen.getByText('버튼으로 빠르게 정리해요')).toBeTruthy();
     await fireEvent.press(screen.getByTestId('onboarding-next'));
     expect(screen.getByText('데이터는 이 기기에 저장돼요')).toBeTruthy();
     await fireEvent.press(screen.getByTestId('onboarding-next'));

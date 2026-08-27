@@ -41,9 +41,9 @@ export function OnboardingView({
             'sparkles',
           ],
           [
-            '밀어서 빠르게 처리해요',
-            '오른쪽으로 밀면 완료, 왼쪽으로 밀면 삭제할 수 있어요.',
-            'move-horizontal',
+            '버튼으로 빠르게 정리해요',
+            '위·아래 버튼으로 순서를 바꾸고 휴지통 버튼으로 삭제할 수 있어요.',
+            'list-ordered',
           ],
           [
             '데이터는 이 기기에 저장돼요',
@@ -58,9 +58,9 @@ export function OnboardingView({
             'sparkles',
           ],
           [
-            'Swipe to move faster',
-            'Swipe right to complete and left to delete a task.',
-            'move-horizontal',
+            'Organize quickly with buttons',
+            'Use the up and down buttons to reorder, or the trash button to delete.',
+            'list-ordered',
           ],
           [
             'Your data stays on this device',

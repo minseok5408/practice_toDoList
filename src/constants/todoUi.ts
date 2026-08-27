@@ -19,9 +19,9 @@ export const TODO_SORTS: TodoSort[] = [
 ];
 
 export const PROJECT_COLORS = [
-  '#6657e8',
-  '#2d9b72',
-  '#e4a33b',
-  '#d34f67',
-  '#3d89d8',
+  '#3282f6',
+  '#12a17d',
+  '#e49a25',
+  '#df5d72',
+  '#258ea6',
 ] as const;

@@ -46,6 +46,12 @@ const RECURRENCES: (RecurrenceFrequency | 'none')[] = [
   'custom',
 ];
 
+export function createDefaultDueAt(now = Date.now()) {
+  const today = new Date(now);
+  today.setHours(23, 59, 0, 0);
+  return today.getTime();
+}
+
 function draftFromTodo(todo: Todo | null, projectId: string | null): TodoDraft {
   return todo
     ? {
@@ -63,7 +69,7 @@ function draftFromTodo(todo: Todo | null, projectId: string | null): TodoDraft {
         title: '',
         notes: '',
         priority: 'normal',
-        dueAt: null,
+        dueAt: createDefaultDueAt(),
         reminderAt: null,
         projectId,
         tags: [],
@@ -437,7 +443,13 @@ function ChoiceChip({
       ]}
     >
       {color ? (
-        <View style={[choiceStyles.dot, { backgroundColor: color }]} />
+        <View
+          style={[
+            choiceStyles.dot,
+            { backgroundColor: active ? '#ffffff' : color },
+            active && choiceStyles.activeDot,
+          ]}
+        />
       ) : null}
       <Text
         style={{
@@ -461,7 +473,11 @@ const choiceStyles = StyleSheet.create({
     minHeight: 44,
     paddingHorizontal: 13,
   },
-  dot: { borderRadius: 4, height: 7, width: 7 },
+  dot: { borderRadius: 5, height: 9, width: 9 },
+  activeDot: {
+    borderColor: 'rgba(0,0,0,0.12)',
+    borderWidth: 1,
+  },
 });
 
 function createStyles(theme: AppTheme) {

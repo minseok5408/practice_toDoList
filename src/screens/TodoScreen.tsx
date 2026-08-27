@@ -1,9 +1,11 @@
 import { Lucide, type LucideIconName } from '@react-native-vector-icons/lucide';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
+  FlatList,
   Keyboard,
   LayoutAnimation,
+  type ListRenderItemInfo,
   Modal,
   Platform,
   Pressable,
@@ -13,10 +15,6 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import DraggableFlatList, {
-  ScaleDecorator,
-  type RenderItemParams,
-} from 'react-native-draggable-flatlist';
 
 import { ScreenState } from '../components/ScreenState';
 import { StorageRecoveryState } from '../components/StorageRecoveryState';
@@ -43,17 +41,16 @@ export function TodoScreen() {
     tags,
     updatePreferences,
   } = useTodoAppContext();
-  const { archiveTodos, deleteTodos, toggleSubtask, toggleTodo } = app;
+  const { archiveTodos, deleteTodos, reorderTodos, toggleSubtask, toggleTodo } =
+    app;
   const theme = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const [search, setSearch] = useState('');
-  const [quickTitle, setQuickTitle] = useState('');
   const [editorTodo, setEditorTodo] = useState<Todo | null>(null);
   const [editorVisible, setEditorVisible] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [moveVisible, setMoveVisible] = useState(false);
   const [sortVisible, setSortVisible] = useState(false);
-  const quickInputRef = useRef<TextInput>(null);
 
   const query: TodoQuery = useMemo(
     () => ({
@@ -140,44 +137,45 @@ export function TodoScreen() {
     });
   }, []);
 
-  async function addQuick() {
-    if (!quickTitle.trim()) return;
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    if (await app.addQuickTodo(quickTitle)) {
-      setQuickTitle('');
-      quickInputRef.current?.focus();
-    }
-  }
-
   function closeSelection() {
     setSelectedIds(new Set());
     setMoveVisible(false);
   }
 
+  const moveTodo = useCallback(
+    (index: number, offset: -1 | 1) => {
+      const destination = index + offset;
+      if (destination < 0 || destination >= visibleTodos.length) return;
+
+      const reordered = [...visibleTodos];
+      const [moved] = reordered.splice(index, 1);
+      reordered.splice(destination, 0, moved);
+      void reorderTodos(reordered.map((todo) => todo.id));
+    },
+    [reorderTodos, visibleTodos],
+  );
+
   const renderTodoItem = useCallback(
-    (params: RenderItemParams<Todo>) => (
-      <ScaleDecorator activeScale={1.02}>
-        <TodoItem
-          dragEnabled={dragEnabled}
-          locale={locale}
-          onArchive={handleArchiveTodo}
-          onDelete={handleDeleteTodo}
-          onDrag={dragEnabled ? params.drag : undefined}
-          onEdit={handleEditTodo}
-          onSelect={toggleSelection}
-          onToggle={handleToggleTodo}
-          onToggleSubtask={toggleSubtask}
-          project={
-            params.item.projectId
-              ? projectById.get(params.item.projectId)
-              : undefined
-          }
-          selected={selectedIds.has(params.item.id)}
-          selectionMode={selectedIds.size > 0}
-          t={t}
-          todo={params.item}
-        />
-      </ScaleDecorator>
+    ({ item, index }: ListRenderItemInfo<Todo>) => (
+      <TodoItem
+        canMoveDown={dragEnabled && index < visibleTodos.length - 1}
+        canMoveUp={dragEnabled && index > 0}
+        dragEnabled={dragEnabled}
+        locale={locale}
+        onArchive={handleArchiveTodo}
+        onDelete={handleDeleteTodo}
+        onEdit={handleEditTodo}
+        onMoveDown={() => moveTodo(index, 1)}
+        onMoveUp={() => moveTodo(index, -1)}
+        onSelect={toggleSelection}
+        onToggle={handleToggleTodo}
+        onToggleSubtask={toggleSubtask}
+        project={item.projectId ? projectById.get(item.projectId) : undefined}
+        selected={selectedIds.has(item.id)}
+        selectionMode={selectedIds.size > 0}
+        t={t}
+        todo={item}
+      />
     ),
     [
       dragEnabled,
@@ -186,11 +184,13 @@ export function TodoScreen() {
       handleEditTodo,
       handleToggleTodo,
       locale,
+      moveTodo,
       projectById,
       selectedIds,
       t,
       toggleSubtask,
       toggleSelection,
+      visibleTodos.length,
     ],
   );
 
@@ -266,38 +266,6 @@ export function TodoScreen() {
             %
           </Text>
         </View>
-      </View>
-
-      <View style={styles.quickAdd}>
-        <View style={styles.quickIcon}>
-          <Lucide color={theme.colors.primary} name="sparkles" size={18} />
-        </View>
-        <TextInput
-          ref={quickInputRef}
-          accessibilityLabel={t('addPlaceholder')}
-          editable={app.isReady}
-          maxLength={120}
-          onChangeText={setQuickTitle}
-          onSubmitEditing={() => void addQuick()}
-          placeholder={app.isReady ? t('addPlaceholder') : t('loading')}
-          placeholderTextColor={theme.colors.textSoft}
-          returnKeyType="done"
-          style={styles.quickInput}
-          testID="quick-add-input"
-          value={quickTitle}
-        />
-        <Pressable
-          accessibilityLabel={t('add')}
-          disabled={!quickTitle.trim() || !app.isReady}
-          onPress={() => void addQuick()}
-          style={[
-            styles.quickButton,
-            (!quickTitle.trim() || !app.isReady) && styles.disabled,
-          ]}
-          testID="quick-add-button"
-        >
-          <Lucide color="#ffffff" name="arrow-up" size={18} />
-        </Pressable>
       </View>
 
       <ScrollView
@@ -435,12 +403,18 @@ export function TodoScreen() {
       {!dragEnabled && preferences.sort === 'manual' ? (
         <Text style={styles.dragHint}>{t('dragUnavailable')}</Text>
       ) : null}
+      <View style={styles.listSectionHeader}>
+        <Text style={styles.listSectionTitle}>{t('tasks')}</Text>
+        <View style={styles.listCountBadge}>
+          <Text style={styles.listCountText}>{visibleTodos.length}</Text>
+        </View>
+      </View>
     </View>
   );
 
   return (
     <Pressable onPress={Keyboard.dismiss} style={styles.screen}>
-      <DraggableFlatList
+      <FlatList
         ListEmptyComponent={
           <ScreenState compact title={t('noTodos')} variant="empty" />
         }
@@ -460,7 +434,6 @@ export function TodoScreen() {
           ) : null
         }
         ListHeaderComponent={listHeader}
-        activationDistance={12}
         contentContainerStyle={styles.listContent}
         data={visibleTodos}
         initialNumToRender={12}
@@ -468,7 +441,6 @@ export function TodoScreen() {
         keyboardShouldPersistTaps="handled"
         keyExtractor={(todo) => todo.id}
         maxToRenderPerBatch={12}
-        onDragEnd={({ data }) => app.reorderTodos(data.map((todo) => todo.id))}
         removeClippedSubviews={Platform.OS === 'android'}
         renderItem={renderTodoItem}
         showsVerticalScrollIndicator={false}
@@ -553,7 +525,13 @@ function FilterChip({
       style={[styles.filterChip, active && styles.filterChipActive]}
     >
       {color ? (
-        <View style={[styles.filterDot, { backgroundColor: color }]} />
+        <View
+          style={[
+            styles.filterDot,
+            { backgroundColor: active ? '#ffffff' : color },
+            active && styles.filterDotActive,
+          ]}
+        />
       ) : null}
       <Text style={[styles.filterChipText, active && styles.activeText]}>
         {label}
@@ -755,22 +733,26 @@ function createStyles(theme: AppTheme) {
     topAddButton: {
       alignItems: 'center',
       backgroundColor: colors.primary,
-      borderRadius: radii.md,
-      height: 46,
+      borderRadius: radii.lg,
+      height: 48,
       justifyContent: 'center',
-      width: 46,
+      width: 48,
       ...theme.shadows.floating,
     },
     heroCard: {
-      backgroundColor: colors.primary,
+      backgroundColor: colors.primaryDark,
       borderRadius: radii.xl,
       flexDirection: 'row',
-      minHeight: 145,
+      minHeight: 136,
       overflow: 'hidden',
       padding: spacing.xl,
     },
     heroCopy: { flex: 1, justifyContent: 'center', paddingRight: spacing.sm },
-    heroEyebrow: { ...typography.caption, color: '#d9d5ff', fontWeight: '800' },
+    heroEyebrow: {
+      ...typography.caption,
+      color: 'rgba(255,255,255,0.72)',
+      fontWeight: '800',
+    },
     heroTitle: {
       ...typography.title,
       color: '#ffffff',
@@ -780,7 +762,7 @@ function createStyles(theme: AppTheme) {
     },
     heroBody: {
       ...typography.caption,
-      color: '#d9d5ff',
+      color: 'rgba(255,255,255,0.72)',
       marginTop: spacing.sm,
     },
     progressCircle: {
@@ -798,46 +780,10 @@ function createStyles(theme: AppTheme) {
       color: '#ffffff',
       fontSize: 15,
     },
-    quickAdd: {
-      alignItems: 'center',
-      backgroundColor: colors.surface,
-      borderColor: colors.border,
-      borderRadius: radii.lg,
-      borderWidth: 1,
-      flexDirection: 'row',
-      gap: spacing.sm,
-      marginTop: spacing.md,
-      minHeight: 59,
-      paddingHorizontal: spacing.sm,
-      ...theme.shadows.card,
-    },
-    quickIcon: {
-      alignItems: 'center',
-      backgroundColor: colors.primarySoft,
-      borderRadius: radii.md,
-      height: 40,
-      justifyContent: 'center',
-      width: 40,
-    },
-    quickInput: {
-      ...typography.body,
-      color: colors.text,
-      flex: 1,
-      minHeight: 50,
-    },
-    quickButton: {
-      alignItems: 'center',
-      backgroundColor: colors.primary,
-      borderRadius: radii.md,
-      height: 44,
-      justifyContent: 'center',
-      width: 44,
-    },
-    disabled: { opacity: 0.35 },
     smartRow: {
       gap: spacing.sm,
       paddingBottom: spacing.md,
-      paddingTop: spacing.lg,
+      paddingTop: spacing.xl,
     },
     smartChip: {
       alignItems: 'center',
@@ -902,13 +848,12 @@ function createStyles(theme: AppTheme) {
       color: colors.textMuted,
       fontSize: 10,
     },
-    filterRow: { gap: spacing.sm, paddingBottom: spacing.xxs },
+    filterRow: { gap: spacing.sm, paddingBottom: spacing.xs },
     tagFilterRow: { gap: spacing.sm, paddingTop: spacing.xs },
     dragHint: {
       ...typography.caption,
       color: colors.textSoft,
       fontSize: 9,
-      marginBottom: spacing.md,
       marginTop: spacing.xs,
     },
     filterChip: {
@@ -927,6 +872,39 @@ function createStyles(theme: AppTheme) {
       fontSize: 10,
     },
     filterDot: { borderRadius: 5, height: 9, width: 9 },
+    filterDotActive: {
+      borderColor: 'rgba(0,0,0,0.12)',
+      borderWidth: 1,
+    },
+    listSectionHeader: {
+      alignItems: 'center',
+      borderTopColor: colors.border,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      flexDirection: 'row',
+      gap: spacing.sm,
+      marginTop: spacing.xl,
+      paddingBottom: spacing.md,
+      paddingTop: spacing.lg,
+    },
+    listSectionTitle: {
+      ...typography.bodyStrong,
+      color: colors.text,
+      fontSize: 15,
+    },
+    listCountBadge: {
+      alignItems: 'center',
+      backgroundColor: colors.primarySoft,
+      borderRadius: radii.pill,
+      justifyContent: 'center',
+      minHeight: 22,
+      minWidth: 22,
+      paddingHorizontal: spacing.sm,
+    },
+    listCountText: {
+      ...typography.caption,
+      color: colors.primary,
+      fontWeight: '900',
+    },
     clearCompleted: {
       alignItems: 'center',
       flexDirection: 'row',

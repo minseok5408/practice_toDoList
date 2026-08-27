@@ -8,8 +8,9 @@ import {
 } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { useLocales } from 'expo-localization';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Alert,
   LayoutAnimation,
   Platform,
   StyleSheet,
@@ -30,6 +31,7 @@ import {
   StorageErrorBanner,
 } from './src/components/FeedbackOverlay';
 import { ScreenState } from './src/components/ScreenState';
+import { NotificationPermissionPrompt } from './src/components/NotificationPermissionPrompt';
 import {
   TodoAppContext,
   type TodoAppContextValue,
@@ -40,9 +42,14 @@ import { useTodos } from './src/hooks/useTodos';
 import { createTranslator, resolveLanguage } from './src/i18n';
 import type { RootTabParamList } from './src/navigation/types';
 import { ArchiveScreen } from './src/screens/ArchiveScreen';
+import { CalendarScreen } from './src/screens/CalendarScreen';
 import { HistoryScreen } from './src/screens/HistoryScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { TodoScreen } from './src/screens/TodoScreen';
+import {
+  hasNotificationPermission,
+  requestNotificationPermission,
+} from './src/services/notifications';
 import {
   darkTheme,
   lightTheme,
@@ -64,6 +71,7 @@ const Tab = createBottomTabNavigator<RootTabParamList>();
 
 const ROUTE_TO_SCREEN: Record<keyof RootTabParamList, MainScreen> = {
   Tasks: 'tasks',
+  Calendar: 'calendar',
   History: 'history',
   Archive: 'archive',
   Settings: 'settings',
@@ -71,6 +79,7 @@ const ROUTE_TO_SCREEN: Record<keyof RootTabParamList, MainScreen> = {
 
 const SCREEN_TO_ROUTE: Record<MainScreen, keyof RootTabParamList> = {
   tasks: 'Tasks',
+  calendar: 'Calendar',
   history: 'History',
   archive: 'Archive',
   settings: 'Settings',
@@ -78,6 +87,7 @@ const SCREEN_TO_ROUTE: Record<MainScreen, keyof RootTabParamList> = {
 
 const TAB_ICONS: Record<keyof RootTabParamList, LucideIconName> = {
   Tasks: 'list-checks',
+  Calendar: 'calendar-days',
   History: 'history',
   Archive: 'archive',
   Settings: 'settings',
@@ -158,6 +168,13 @@ function MainApp({
   updatePreferences: (changes: Partial<AppPreferences>) => void;
 }) {
   const app = useTodos(locale);
+  const notificationPromptStarted = useRef(false);
+  const [notificationPromptVisible, setNotificationPromptVisible] =
+    useState(false);
+  const [
+    requestingNotificationPermission,
+    setRequestingNotificationPermission,
+  ] = useState(false);
   const tags = useMemo(() => selectTags(app.todos), [app.todos]);
   const displayedProjects = useMemo(
     () => localizeProjects(app.projects, locale),
@@ -180,6 +197,66 @@ function MainApp({
       updatePreferences({ selectedTag: null });
     }
   }, [preferences.selectedTag, tags, updatePreferences]);
+
+  useEffect(() => {
+    if (
+      !app.isHydrated ||
+      preferences.notificationPermissionPrompted ||
+      notificationPromptStarted.current
+    ) {
+      return;
+    }
+
+    notificationPromptStarted.current = true;
+    let active = true;
+
+    void hasNotificationPermission()
+      .then((granted) => {
+        if (!active) return;
+        if (granted) {
+          updatePreferences({ notificationPermissionPrompted: true });
+          return;
+        }
+        setNotificationPromptVisible(true);
+      })
+      .catch(() => {
+        if (active) setNotificationPromptVisible(true);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [
+    app.isHydrated,
+    preferences.notificationPermissionPrompted,
+    updatePreferences,
+  ]);
+
+  function postponeNotificationPermission() {
+    setNotificationPromptVisible(false);
+    updatePreferences({ notificationPermissionPrompted: true });
+  }
+
+  async function allowNotificationPermission() {
+    if (requestingNotificationPermission) return;
+
+    setRequestingNotificationPermission(true);
+    let granted = false;
+    try {
+      granted = await requestNotificationPermission();
+    } finally {
+      setRequestingNotificationPermission(false);
+      setNotificationPromptVisible(false);
+      updatePreferences({ notificationPermissionPrompted: true });
+    }
+
+    if (!granted) {
+      Alert.alert(
+        t('notificationPermissionTitle'),
+        t('notificationPermissionOff'),
+      );
+    }
+  }
 
   const contextValue = useMemo<TodoAppContextValue>(
     () => ({
@@ -257,7 +334,7 @@ function MainApp({
               ),
               tabBarLabelStyle: {
                 ...theme.typography.caption,
-                fontSize: 10,
+                fontSize: 9,
               },
               tabBarStyle: {
                 backgroundColor: theme.colors.surface,
@@ -269,6 +346,11 @@ function MainApp({
               component={TodoScreen}
               name="Tasks"
               options={{ title: t('tasks') }}
+            />
+            <Tab.Screen
+              component={CalendarScreen}
+              name="Calendar"
+              options={{ title: t('calendar') }}
             />
             <Tab.Screen
               component={HistoryScreen}
@@ -311,6 +393,13 @@ function MainApp({
             onClose={app.dismissFeedback}
           />
         ) : null}
+        <NotificationPermissionPrompt
+          onAllow={() => void allowNotificationPermission()}
+          onLater={postponeNotificationPermission}
+          requesting={requestingNotificationPermission}
+          t={t}
+          visible={notificationPromptVisible}
+        />
       </View>
     </TodoAppContext.Provider>
   );

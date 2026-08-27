@@ -12,19 +12,19 @@ export const DEFAULT_PROJECTS: Project[] = [
   {
     id: 'project-personal',
     name: '개인',
-    color: '#6657e8',
+    color: '#3282f6',
     createdAt: 0,
   },
   {
     id: 'project-work',
     name: '업무',
-    color: '#2d9b72',
+    color: '#12a17d',
     createdAt: 0,
   },
   {
     id: 'project-study',
     name: '공부',
-    color: '#e4a33b',
+    color: '#e49a25',
     createdAt: 0,
   },
 ];

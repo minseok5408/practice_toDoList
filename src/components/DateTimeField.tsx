@@ -25,6 +25,21 @@ type DateTimeFieldProps = {
   onChange: (value: number | null) => void;
 };
 
+export function commitSelectedDate(
+  selectedDate: Date,
+  baseDate: Date,
+  onChange: (value: number) => void,
+) {
+  const result = new Date(baseDate);
+  result.setFullYear(
+    selectedDate.getFullYear(),
+    selectedDate.getMonth(),
+    selectedDate.getDate(),
+  );
+  onChange(result.getTime());
+  return result;
+}
+
 export function DateTimeField({
   label,
   value,
@@ -45,16 +60,6 @@ export function DateTimeField({
     }
   }, [value]);
 
-  function applyDatePart(selectedDate: Date, baseDate: Date) {
-    const result = new Date(baseDate);
-    result.setFullYear(
-      selectedDate.getFullYear(),
-      selectedDate.getMonth(),
-      selectedDate.getDate(),
-    );
-    return result;
-  }
-
   function openAndroidPicker() {
     const initialDate = new Date(value ?? Date.now() + 60 * 60 * 1000);
 
@@ -66,7 +71,11 @@ export function DateTimeField({
           return;
         }
 
-        const dateWithOriginalTime = applyDatePart(selectedDate, initialDate);
+        const dateWithOriginalTime = commitSelectedDate(
+          selectedDate,
+          initialDate,
+          onChange,
+        );
         DateTimePickerAndroid.open({
           value: dateWithOriginalTime,
           mode: 'time',
